@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#00205a">
+<title>INS | Quotation Builder</title>
+<link rel="icon" type="image/png" href="assets_build/logo_crop.png">
+<link rel="stylesheet" href="css/style.css?v=7">
+</head>
+<body>
+
+<header class="appbar">
+  <div class="brand">
+    <img class="brand-logo" src="assets_build/logo_crop.png" alt="INS logo">
+    <div class="brand-text">
+      <div class="brand-title">Quotation Builder</div>
+      <div class="brand-sub">Integrated Network Solution</div>
+    </div>
+  </div>
+  <div class="actions">
+    <button id="btnRecords" class="btn ghost" title="Saved documents, description library, backup & Google Drive sync">&#9776; Records</button>
+    <button id="btnNew" class="btn ghost" title="Start a new quotation with the next number">&#65291; New Quotation</button>
+    <button id="btnDOCX" class="btn word" title="Download as editable Microsoft Word file">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm4 18H6V4h7v5h5v11zM8.5 11l1.7 6.5h1.5l1.3-4.4 1.3 4.4h1.5L17.5 11h-1.6l-1 4.6-1.3-4.6h-1.2l-1.3 4.6-1-4.6H8.5z"/></svg>
+      Word
+    </button>
+    <button id="btnPDF" class="btn pdf" title="Download as PDF">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm4 18H6V4h7v5h5v11zM8 12h2a2 2 0 0 1 0 4H9.5v2H8v-6zm1.5 2.5H10a.5.5 0 0 0 0-1h-.5v1zm3-2.5h2.25A1.75 1.75 0 0 1 16.5 13.75v1.5A1.75 1.75 0 0 1 14.75 17H12.5v-5zm1.5 3.5h.75a.25.25 0 0 0 .25-.25v-1.5a.25.25 0 0 0-.25-.25H14v2z"/></svg>
+      Download PDF
+    </button>
+  </div>
+</header>
+
+<nav class="viewswitch" aria-label="View switcher">
+  <button type="button" class="vs-btn active" data-view="edit">&#9998; Edit</button>
+  <button type="button" class="vs-btn" data-view="preview">&#128065; Preview</button>
+</nav>
+
+<main class="layout">
+  <aside class="formpane">
+    <form id="form" autocomplete="off" onsubmit="return false">
+
+      <section class="card">
+        <h2 class="sec-title">Quotation Details</h2>
+        <div class="grid2">
+          <label class="field">
+            <span>Quotation No <em class="hint">auto &middot; editable</em></span>
+            <input id="qNo" type="text" placeholder="0011">
+          </label>
+          <label class="field">
+            <span>Quotation Date</span>
+            <input id="qDate" type="date">
+          </label>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2 class="sec-title">Customer Details</h2>
+        <label class="field">
+          <span>Attention / Designation <em class="hint">e.g. Project Manager,</em></span>
+          <input id="custAttention" type="text" placeholder="Project Manager,">
+        </label>
+        <label class="field">
+          <span>Customer / Company Name</span>
+          <input id="custName" type="text" placeholder="Sri Lanka Telecom Services (Ltd)">
+        </label>
+        <label class="field">
+          <span>Address <em class="hint">one line per row</em></span>
+          <textarea id="custAddress" rows="3" placeholder="#148/15,&#10;Lesley Ranagala Mawatha,&#10;Colombo 08."></textarea>
+        </label>
+        <div class="grid2">
+          <label class="field">
+            <span>Telephone</span>
+            <input id="custPhone" type="text" placeholder="011 2 XXX XXX">
+          </label>
+          <label class="field">
+            <span>Email</span>
+            <input id="custEmail" type="email" placeholder="name@company.com">
+          </label>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2 class="sec-title">Project</h2>
+        <label class="field">
+          <span>Project Name</span>
+          <input id="projectName" type="text" placeholder="Department of Meteorology &ndash; NMC Building, Colombo 07">
+        </label>
+      </section>
+
+      <section class="card">
+        <h2 class="sec-title">Items</h2>
+        <div id="itemsBody"></div>
+        <datalist id="unitList">
+          <option value="Point"></option><option value="No"></option><option value="m"></option>
+          <option value="m&#178;"></option><option value="Set"></option><option value="Pcs"></option>
+          <option value="Hrs"></option><option value="Sum"></option><option value="Lot"></option>
+        </datalist>
+        <button type="button" id="btnAddItem" class="btn add">&#65291; Add Item</button>
+        <div class="totals">
+          <div class="trow"><span>Subtotal</span><b id="totSub">LKR 0.00</b></div>
+          <div class="trow" id="totVatRow" style="display:none"><span>VAT</span><b id="totVat">LKR 0.00</b></div>
+          <div class="trow grand"><span>Total</span><b id="totTotal">LKR 0.00</b></div>
+        </div>
+        <label class="field slim">
+          <span>VAT % <em class="hint">optional &middot; e.g. 18</em></span>
+          <input id="vatPercent" type="number" min="0" max="100" step="0.5" placeholder="0">
+        </label>
+      </section>
+
+      <section class="card">
+        <h2 class="sec-title">Terms &amp; Conditions</h2>
+        <label class="field">
+          <span>Terms <em class="hint">one per line</em></span>
+          <textarea id="termsLines" rows="4"></textarea>
+        </label>
+      </section>
+
+      <section class="card">
+        <h2 class="sec-title">Closing &amp; Signature</h2>
+        <label class="field">
+          <span>Closing Note</span>
+          <textarea id="closingText" rows="2"></textarea>
+        </label>
+        <div class="grid2">
+          <label class="field">
+            <span>Signatory Name</span>
+            <input id="sigName" type="text">
+          </label>
+          <label class="field">
+            <span>Designation <em class="hint">optional</em></span>
+            <input id="sigDesignation" type="text" placeholder="Managing Director">
+          </label>
+        </div>
+        <label class="field">
+          <span>Mobile</span>
+          <input id="sigMobile" type="text">
+        </label>
+      </section>
+
+    </form>
+    <div class="savebar"><span id="saveState">Autosaved locally</span> <span id="cloudState"></span> &middot; data stays in this browser</div>
+  </aside>
+
+  <section class="previewpane">
+    <div class="previewbar">
+      <span id="pageCount">1 page</span>
+      <span class="spacer"></span>
+      <button id="zoomOut" class="zoombtn" title="Zoom out">&minus;</button>
+      <button id="zoomFit" class="zoombtn" title="Fit width">Fit</button>
+      <button id="zoomIn" class="zoombtn" title="Zoom in">&#43;</button>
+    </div>
+    <div id="pages" class="pages"></div>
+  </section>
+</main>
+
+<div class="mobileactions">
+  <button id="btnRecordsM" class="mb ghost2" title="Documents, library, backup">&#9776; Records</button>
+  <button id="btnNewM" class="mb ghost" title="New quotation">&#65291; New</button>
+  <button id="btnDOCXM" class="mb word" title="Download editable Word file">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm4 18H6V4h7v5h5v11zM8.5 11l1.7 6.5h1.5l1.3-4.4 1.3 4.4h1.5L17.5 11h-1.6l-1 4.6-1.3-4.6h-1.2l-1.3 4.6-1-4.6H8.5z"/></svg>
+    Word
+  </button>
+  <button id="btnPDFM" class="mb pdf" title="Download PDF">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm4 18H6V4h7v5h5v11zM8 12h2a2 2 0 0 1 0 4H9.5v2H8v-6zm1.5 2.5H10a.5.5 0 0 0 0-1h-.5v1zm3-2.5h2.25A1.75 1.75 0 0 1 16.5 13.75v1.5A1.75 1.75 0 0 1 14.75 17H12.5v-5zm1.5 3.5h.75a.25.25 0 0 0 .25-.25v-1.5a.25.25 0 0 0-.25-.25H14v2z"/></svg>
+    PDF
+  </button>
+</div>
+
+<div id="overlay" class="overlay hidden">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-head">
+      <div class="mtabs">
+        <button type="button" class="mtab active" data-tab="docs">Documents</button>
+        <button type="button" class="mtab" data-tab="lib">Descriptions</button>
+        <button type="button" class="mtab" data-tab="sync">Backup &amp; Sync</button>
+      </div>
+      <button type="button" class="modal-x" id="modalClose" title="Close">&#10005;</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+<div id="acBox" class="acbox hidden"></div>
+<div id="toast" class="toast"></div>
+
+<script src="js/vendor/jspdf.umd.min.js"></script>
+<script src="js/letterhead.js?v=6"></script>
+<script src="js/layout.js?v=6"></script>
+<script src="js/store.js?v=6"></script>
+<script src="js/drive.js?v=6"></script>
+<script src="js/export.js?v=6"></script>
+<script src="js/preview.js?v=6"></script>
+<script src="js/app.js?v=6"></script>
+</body>
+</html>
