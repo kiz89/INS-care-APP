@@ -37,13 +37,81 @@ opens in your default browser (Chrome or Edge recommended). That's it.
 "**+ New Quotation**" clears the form for the next customer and automatically
 increases the quotation number.
 
+## Saving, invoices & the Documents/Invoices tabs
+
+- **Save button** (top bar, and the mobile bottom bar) stores the current
+  quotation or invoice into Records immediately — no export needed.
+- **Generate an invoice from a quotation**: Records → **Documents** → press the
+  🧾 button on any quotation. The invoice opens in the same editor, fully
+  editable — change items, quantities, rates, customer, VAT, anything. It gets
+  its own **Invoice No** (INV counter) and stays **linked to the quotation**
+  (shown as a badge above the form and printed as *Quotation Ref* on the
+  document).
+- **Records → Invoices** lists every invoice with its quotation link, totals and
+  format badges; search by invoice no, quotation no, date or customer. Reopen
+  any invoice to edit and re-export.
+- Invoices export to **PDF and Word** with the same letterhead and quality as
+  quotations — the title block reads INVOICE with Invoice No + Quotation Ref +
+  Invoice Date.
+- Everything (invoices included) is covered by the Drive auto-sync and the
+  backup/restore file.
+
+## Project Management (Income · Expenses · Workers · Reports)
+
+Switch to **Projects** in the top bar. Inside, two tabs: **Records & Reports**
+and **Workers & Payments**.
+
+### Workers & Payments
+
+- **+ Worker** adds your team member (name, role, phone).
+- **Allocation chips** on each worker's card assign them to projects — one
+  worker can be on **several projects at the same time** (tap a project chip to
+  allocate/unallocate; blue = allocated).
+- **Pay** records a payment: **Salary, Meals, Accommodation or Other**, on a
+  chosen project and date. Every payment **automatically lands in that
+  project's expenses** (salary adds to the project's Salary column;
+  meals/accommodation/other to Worker welfare).
+- **Worker payment report** — pick a worker and view **Weekly**, **Monthly** or
+  **Project-wise** how he got paid (Salary / Meals / Accom. / Other / Total),
+  with a **⬇ PDF** on the letterhead.
+- The payments log lists every worker payment and each worker card shows their
+  total paid.
+
+### Records & Reports
+
+- **Projects** — press **+ Project** to register each job. Add it **manually**
+  (name + optional customer) or pick from the **"From generated invoices"**
+  dropdown, which lists project names found on your invoices that aren't added
+  yet — choosing one fills the name and customer. Once added, a project no
+  longer appears in that dropdown. Every income/expense can be attached to a
+  project or left as *General*.
+- **Income** — press **+ Income**. Pick a saved **invoice** or quotation from
+  the dropdown to auto-fill its number and full amount, then keep the full value
+  or type a smaller part payment (advance/installment).
+- **Expenses** — press **+ Expense** and choose the category:
+  **Salary** (staff payments) or **Purchasing** (materials/supplies).
+- **Chart** — a monthly bar chart (Income vs Salary vs Purchasing) sits under
+  the summary cards, so income and expenses are visible separately at a glance.
+- **Filters** — the category chips (All / Income / Salary / Purchasing) plus
+  project and date filters scope the cards, chart and records table.
+- **Summary cards** always show Income, Salary, Purchasing, **Worker welfare**
+  (meals + accommodation + other), Total expenses and Profit/Loss — each
+  separately.
+- **Reports** — three modes: **Project-wise** (all time), **Monthly**, and
+  **Weekly** (Monday-start ISO weeks over a selected date range). Every report
+  shows Income / Salary / Purchasing / Expenses / Profit per row plus a grand
+  TOTAL, and **⬇ PDF** exports it on the company letterhead.
+- All PM records are included in Records → Backup & Sync (Drive auto-upload,
+  backup file, restore) like everything else.
+
 ## Records — documents, library & backup
 
 Open **☰ Records** (or **Records** in the mobile bottom bar) for everything saved:
 
-- **Documents** — every time you download a PDF or Word file, the quotation is
-  archived automatically. Search by number, date (e.g. `04/10/2026`), customer or
-  project, then **open** a past quotation back into the editor (and re-export it).
+- **Documents** — every time you **Save** or download a PDF/Word file, the
+  quotation is archived here automatically. Search by number, date
+  (e.g. `04/10/2026`), customer or project; reopen a past quotation in the
+  editor, or press 🧾 to generate an invoice from it.
 - **Descriptions** — your item library. On any item row, tick **Save** and press
   **+ Add Item**: the description and its unit are kept. Next time you type a
   matching word in any description box it is suggested — picking one fills the
@@ -60,6 +128,13 @@ Open **☰ Records** (or **Records** in the mobile bottom bar) for everything sa
   `python -m http.server 8770` with `http://localhost:8770` as the origin) —
   `file://` is not accepted by Google. No Drive? **Download backup file** /
   **Restore from file** works everywhere.
+
+## Light / dark mode
+
+The **moon / sun button** in the top bar (and in the mobile bottom bar) switches
+between light and dark mode. Your choice is remembered — reopening the app
+applies it instantly with no flash. The A4 page preview always stays white,
+because it is the printed page; everything around it adapts.
 
 ## Tips
 
@@ -83,6 +158,9 @@ Open **☰ Records** (or **Records** in the mobile bottom bar) for everything sa
 | `css/style.css` | UI styling |
 | `js/app.js` | Form logic, autosave, numbering |
 | `js/layout.js` | Shared A4 layout engine (preview + PDF) |
+| `js/store.js` | Local data store: library, documents, PM records, backup |
+| `js/drive.js` | Google Drive sync (auto-upload / restore) |
+| `js/pm.js` | Project Management: income/expenses, reports + report PDF |
 | `js/export.js` | PDF + Word export generators |
 | `js/preview.js` | On-screen page renderer |
 | `js/letterhead.js` | Letterhead image (generated from `full hd letterhead.jfif`) |

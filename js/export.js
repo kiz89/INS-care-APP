@@ -23,7 +23,8 @@ function sanitizeFilename(s) {
   return String(s || '').trim().replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, ' ').slice(0, 80);
 }
 function buildFilename(st, ext) {
-  const parts = ['Quotation', String(st.quoteNo || 'Draft').trim()];
+  const isInv = st.docType === 'invoice';
+  const parts = [isInv ? 'Invoice' : 'Quotation', String((isInv ? st.invNo : st.quoteNo) || 'Draft').trim()];
   if (st.customer.name) parts.push(st.customer.name);
   const d = fmtDateDisplay(st.date).replace(/\//g, '-');
   if (d) parts.push(d);
@@ -194,11 +195,18 @@ function buildDocxBlob(st) {
   const body = [];
 
   // title + meta
-  const titleCell = wCell(6200, wP([wR('QUOTATION', { b: 1, color: NAVY, sz: 40, spacing: '10' })], { after: 0 }));
-  const metaCell = wCell(3866, [
-    wP([wR('Quotation No: ', { color: MUT, sz: 20 }), wR(String(st.quoteNo || '').trim(), { b: 1, color: NAVY, sz: 22 })], { jc: 'right', after: 40 }),
+  const isInv = st.docType === 'invoice';
+  const docNo = isInv ? String(st.invNo || '').trim() : String(st.quoteNo || '').trim();
+  const titleCell = wCell(6200, wP([wR(isInv ? 'INVOICE' : 'QUOTATION', { b: 1, color: NAVY, sz: 40, spacing: '10' })], { after: 0 }));
+  const metaParas = isInv ? [
+    wP([wR('Invoice No: ', { color: MUT, sz: 20 }), wR(docNo, { b: 1, color: NAVY, sz: 22 })], { jc: 'right', after: 40 }),
+    wP([wR('Quotation Ref: ', { color: MUT, sz: 20 }), wR(String(st.quoteNo || '').trim(), { b: 1, color: NAVY, sz: 22 })], { jc: 'right', after: 40 }),
+    wP([wR('Invoice Date: ', { color: MUT, sz: 20 }), wR(fmtDateDisplay(st.date), { b: 1, color: NAVY, sz: 22 })], { jc: 'right', after: 0 })
+  ] : [
+    wP([wR('Quotation No: ', { color: MUT, sz: 20 }), wR(docNo, { b: 1, color: NAVY, sz: 22 })], { jc: 'right', after: 40 }),
     wP([wR('Quotation Date: ', { color: MUT, sz: 20 }), wR(fmtDateDisplay(st.date), { b: 1, color: NAVY, sz: 22 })], { jc: 'right', after: 0 })
-  ]);
+  ];
+  const metaCell = wCell(3866, metaParas);
   body.push(wTable([6200, 3866], [wRow(titleCell + metaCell)], { borders: false }));
   body.push(wP([wR('')], { pBdr: [12, '0055B5'], after: 220 }));
 

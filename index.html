@@ -4,9 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#00205a">
+<script>/* apply saved theme before first paint to avoid a flash */try{document.documentElement.dataset.theme=localStorage.getItem('insq_theme')||'light'}catch(e){}</script>
 <title>INS | Quotation Builder</title>
 <link rel="icon" type="image/png" href="assets_build/logo_crop.png">
-<link rel="stylesheet" href="css/style.css?v=7">
+<link rel="stylesheet" href="css/style.css?v=21">
 </head>
 <body>
 
@@ -18,8 +19,17 @@
       <div class="brand-sub">Integrated Network Solution</div>
     </div>
   </div>
+  <nav class="modenav" aria-label="Section">
+    <button type="button" class="mn-btn active" data-mode="quote">Quotation</button>
+    <button type="button" class="mn-btn" data-mode="pm">Projects</button>
+  </nav>
   <div class="actions">
-    <button id="btnRecords" class="btn ghost" title="Saved documents, description library, backup & Google Drive sync">&#9776; Records</button>
+    <button id="btnTheme" class="btn ghost theme-btn" title="Switch light / dark mode" aria-label="Switch light or dark mode"><span class="theme-ico" aria-hidden="true">&#9789;</span></button>
+    <button id="btnRecords" class="btn ghost" title="Saved documents, invoices, description library, backup & Google Drive sync">&#9776; Records</button>
+    <button id="btnSave" class="btn save" title="Save this quotation / invoice to Records">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-4-4zm-5 16a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5zM15 9H5V5h10v4z"/></svg>
+      Save
+    </button>
     <button id="btnNew" class="btn ghost" title="Start a new quotation with the next number">&#65291; New Quotation</button>
     <button id="btnDOCX" class="btn word" title="Download as editable Microsoft Word file">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm4 18H6V4h7v5h5v11zM8.5 11l1.7 6.5h1.5l1.3-4.4 1.3 4.4h1.5L17.5 11h-1.6l-1 4.6-1.3-4.6h-1.2l-1.3 4.6-1-4.6H8.5z"/></svg>
@@ -42,10 +52,11 @@
     <form id="form" autocomplete="off" onsubmit="return false">
 
       <section class="card">
-        <h2 class="sec-title">Quotation Details</h2>
+        <h2 class="sec-title" id="docTitle">Quotation Details</h2>
+        <div id="docBadge" class="doc-badge hidden"></div>
         <div class="grid2">
           <label class="field">
-            <span>Quotation No <em class="hint">auto &middot; editable</em></span>
+            <span id="qNoLabel">Quotation No <em class="hint">auto &middot; editable</em></span>
             <input id="qNo" type="text" placeholder="0011">
           </label>
           <label class="field">
@@ -155,8 +166,29 @@
   </section>
 </main>
 
+<section id="pmView" class="pmview">
+  <div class="pm-wrap">
+    <header class="pm-head">
+      <div class="pm-head-main">
+        <div class="pm-title">
+          <h1>Projects</h1>
+          <p class="pm-sub">Income &middot; expenses &middot; workers &mdash; every job tracked separately</p>
+        </div>
+        <div class="pm-actions" id="pmActions"></div>
+      </div>
+      <nav class="pm-tabs" aria-label="Project section">
+        <button type="button" class="pm-tab active" data-pm-act="pmTab" data-tab="main" aria-pressed="true">Records &amp; Reports</button>
+        <button type="button" class="pm-tab" data-pm-act="pmTab" data-tab="workers" aria-pressed="false">Workers &amp; Payments</button>
+      </nav>
+    </header>
+    <div id="pmBody"></div>
+  </div>
+</section>
+
 <div class="mobileactions">
-  <button id="btnRecordsM" class="mb ghost2" title="Documents, library, backup">&#9776; Records</button>
+  <button id="btnThemeM" class="mb ghost2" title="Switch light / dark mode" aria-label="Switch light or dark mode"><span class="theme-ico" aria-hidden="true">&#9789;</span></button>
+  <button id="btnRecordsM" class="mb ghost2" title="Documents, invoices, library, backup">&#9776;</button>
+  <button id="btnSaveM" class="mb save" title="Save this document">&#128190; Save</button>
   <button id="btnNewM" class="mb ghost" title="New quotation">&#65291; New</button>
   <button id="btnDOCXM" class="mb word" title="Download editable Word file">
     <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm4 18H6V4h7v5h5v11zM8.5 11l1.7 6.5h1.5l1.3-4.4 1.3 4.4h1.5L17.5 11h-1.6l-1 4.6-1.3-4.6h-1.2l-1.3 4.6-1-4.6H8.5z"/></svg>
@@ -173,6 +205,7 @@
     <div class="modal-head">
       <div class="mtabs">
         <button type="button" class="mtab active" data-tab="docs">Documents</button>
+        <button type="button" class="mtab" data-tab="inv">Invoices</button>
         <button type="button" class="mtab" data-tab="lib">Descriptions</button>
         <button type="button" class="mtab" data-tab="sync">Backup &amp; Sync</button>
       </div>
@@ -185,12 +218,13 @@
 <div id="toast" class="toast"></div>
 
 <script src="js/vendor/jspdf.umd.min.js"></script>
-<script src="js/letterhead.js?v=6"></script>
-<script src="js/layout.js?v=6"></script>
-<script src="js/store.js?v=6"></script>
-<script src="js/drive.js?v=6"></script>
-<script src="js/export.js?v=6"></script>
-<script src="js/preview.js?v=6"></script>
-<script src="js/app.js?v=6"></script>
+<script src="js/letterhead.js?v=11"></script>
+<script src="js/layout.js?v=14"></script>
+<script src="js/store.js?v=14"></script>
+<script src="js/drive.js?v=11"></script>
+<script src="js/export.js?v=11"></script>
+<script src="js/preview.js?v=11"></script>
+<script src="js/pm.js?v=21"></script>
+<script src="js/app.js?v=21"></script>
 </body>
 </html>

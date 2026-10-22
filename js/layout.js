@@ -43,6 +43,7 @@ function metrics() {
 }
 function textWidth(str, size, bold, italic) {
   if (!str) return 0;
+  if (typeof jspdf === 'undefined') return str.length * size * 0.5; // rough estimate until the lib loads
   const style = bold ? 'bold' : (italic ? 'italic' : 'normal');
   return metrics().getStringUnitWidth(str, { fontName: 'helvetica', fontStyle: style }) * size;
 }
@@ -133,12 +134,14 @@ function buildPages(st) {
   const total = subtotal + vat;
 
   const pages = [];
+  const isInv = st.docType === 'invoice';
+  const docNo = isInv ? String(st.invNo || '').trim() : String(st.quoteNo || '').trim();
   let prims = null, y = 0;
   const newPage = () => {
     prims = [];
     pages.push(prims);
     if (pages.length > 1) {
-      prims.push({ t: 't', x: BOX.x, y: BOX.top + 3, s: 'Quotation ' + String(st.quoteNo || '') + ' (continued)', z: 8.4, b: true, c: C.mut });
+      prims.push({ t: 't', x: BOX.x, y: BOX.top + 3, s: (isInv ? 'Invoice ' : 'Quotation ') + docNo + ' (continued)', z: 8.4, b: true, c: C.mut });
       prims.push({ t: 'l', x1: BOX.x, y1: BOX.top + 8, x2: BOX.r, y2: BOX.top + 8, color: C.line, sw: 0.7 });
       y = BOX.top + 24;
     } else {
@@ -153,13 +156,17 @@ function buildPages(st) {
   newPage();
 
   /* ----- title + meta (page 1) ----- */
-  T(BOX.x, 191, 'QUOTATION', { z: 20, b: true, c: C.navy, cs: 0.5 });
-  const metaRows = [
-    ['Quotation No', String(st.quoteNo || '').trim()],
+  T(BOX.x, 191, isInv ? 'INVOICE' : 'QUOTATION', { z: 20, b: true, c: C.navy, cs: 0.5 });
+  const metaRows = isInv ? [
+    ['Invoice No', docNo],
+    ['Quotation Ref', String(st.quoteNo || '').trim()],
+    ['Invoice Date', fmtDateDisplay(st.date)]
+  ] : [
+    ['Quotation No', docNo],
     ['Quotation Date', fmtDateDisplay(st.date)]
   ];
   metaRows.forEach((mrow, idx) => {
-    const yy = 176 + idx * 17;
+    const yy = (isInv ? 165 : 176) + idx * 17;
     T(392, yy, mrow[0], { z: 8.6, b: true, c: C.mut, cs: 0.4 });
     T(BOX.r, yy, mrow[1], { z: 11, b: true, c: C.navy, a: 'right' });
   });

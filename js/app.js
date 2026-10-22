@@ -18,7 +18,9 @@ function defaultState() {
   const today = new Date();
   const iso = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
   return {
+    docType: 'quotation',
     quoteNo: padNo(last + 1),
+    invNo: '',
     date: iso,
     customer: { attention: '', name: '', address: '', phone: '', email: '' },
     project: '',
@@ -118,7 +120,15 @@ function updateTotalsBox() {
 
 /* ---------- full form sync ---------- */
 function syncFormFromState() {
-  $('qNo').value = state.quoteNo;
+  const isInv = state.docType === 'invoice';
+  $('docTitle').textContent = isInv ? 'Invoice Details' : 'Quotation Details';
+  $('qNoLabel').innerHTML = isInv ? 'Invoice No <em class="hint">editable</em>' : 'Quotation No <em class="hint">auto &middot; editable</em>';
+  const badge = $('docBadge');
+  if (isInv && state.quoteNo) {
+    badge.textContent = '\u{1F9FE} Invoice \u2014 linked to Quotation ' + state.quoteNo;
+    badge.classList.remove('hidden');
+  } else badge.classList.add('hidden');
+  $('qNo').value = isInv ? (state.invNo || '') : state.quoteNo;
   $('qDate').value = state.date;
   $('custAttention').value = state.customer.attention;
   $('custName').value = state.customer.name;
@@ -135,7 +145,8 @@ function syncFormFromState() {
   renderItems();
 }
 function collectForm() {
-  state.quoteNo = $('qNo').value.trim();
+  if (state.docType === 'invoice') state.invNo = $('qNo').value.trim();
+  else state.quoteNo = $('qNo').value.trim();
   state.date = $('qDate').value;
   state.customer.attention = $('custAttention').value;
   state.customer.name = $('custName').value;
@@ -224,22 +235,12 @@ function bindEvents() {
   });
 
   $('qNo').addEventListener('change', () => {
-    const n = parseInt(state.quoteNo, 10);
-    if (isFinite(n)) localStorage.setItem(LS_LASTNO, String(n));
+    const isInv = state.docType === 'invoice';
+    const n = parseInt(isInv ? state.invNo : state.quoteNo, 10);
+    if (isFinite(n)) localStorage.setItem(isInv ? Store.K.lastInv : LS_LASTNO, String(n));
   });
 
-  /* view switching (mobile/tablet) */
-  const setView = view => {
-    document.body.dataset.view = view;
-    document.querySelectorAll('.vs-btn').forEach(b => b.classList.toggle('active', b.dataset.view === view));
-    if (view === 'preview') setZoom(fitZoom($('pages')));
-    window.scrollTo({ top: 0 });
-  };
-  document.querySelectorAll('.vs-btn').forEach(b => {
-    b.addEventListener('click', () => setView(b.dataset.view));
-  });
-
-  /* export / new actions — desktop buttons + mobile bar share these */
+  /* save / export / invoice actions */
   const newQuotation = () => {
     const cur = parseInt(state.quoteNo, 10);
     const base = isFinite(cur) ? cur : parseInt(localStorage.getItem(LS_LASTNO) || '10', 10);
@@ -252,20 +253,44 @@ function bindEvents() {
     saveDraft();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+  const saveDoc = () => {
+    collectForm();
+    if (state.docType === 'invoice') {
+      const rec = Store.archiveInvoice(state, 'saved');
+      toast('Invoice ' + rec.invNo + ' saved \u2713');
+    } else {
+      const rec = Store.archiveDocument(state, 'saved');
+      toast('Quotation ' + rec.no + ' saved \u2713');
+    }
+  };
   const exportPdf = () => {
     collectForm();
     const blob = buildPdfBlob(state);
-    const rec = Store.archiveDocument(state, 'pdf');
-    downloadBlob(blob, buildFilename(state, 'pdf'));
-    toast('Quotation ' + rec.no + ' saved to Documents \u2713');
+    if (state.docType === 'invoice') {
+      const rec = Store.archiveInvoice(state, 'pdf');
+      downloadBlob(blob, buildFilename(state, 'pdf'));
+      toast('Invoice ' + rec.invNo + ' exported & saved \u2713');
+    } else {
+      const rec = Store.archiveDocument(state, 'pdf');
+      downloadBlob(blob, buildFilename(state, 'pdf'));
+      toast('Quotation ' + rec.no + ' exported & saved \u2713');
+    }
   };
   const exportDocx = () => {
     collectForm();
     const blob = buildDocxBlob(state);
-    const rec = Store.archiveDocument(state, 'docx');
-    downloadBlob(blob, buildFilename(state, 'docx'));
-    toast('Quotation ' + rec.no + ' saved to Documents \u2713');
+    if (state.docType === 'invoice') {
+      const rec = Store.archiveInvoice(state, 'docx');
+      downloadBlob(blob, buildFilename(state, 'docx'));
+      toast('Invoice ' + rec.invNo + ' exported & saved \u2713');
+    } else {
+      const rec = Store.archiveDocument(state, 'docx');
+      downloadBlob(blob, buildFilename(state, 'docx'));
+      toast('Quotation ' + rec.no + ' exported & saved \u2713');
+    }
   };
+  $('btnSave').addEventListener('click', saveDoc);
+  $('btnSaveM').addEventListener('click', saveDoc);
   $('btnNew').addEventListener('click', newQuotation);
   $('btnNewM').addEventListener('click', newQuotation);
   $('btnPDF').addEventListener('click', exportPdf);
@@ -273,8 +298,23 @@ function bindEvents() {
   $('btnDOCX').addEventListener('click', exportDocx);
   $('btnDOCXM').addEventListener('click', exportDocx);
 
+  /* view switching (mobile/tablet) */
+  const setView = view => {
+    document.body.dataset.view = view;
+    document.querySelectorAll('.vs-btn').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+    if (view === 'preview') setZoom(fitZoom($('pages')));
+    window.scrollTo({ top: 0 });
+  };
+  document.querySelectorAll('.vs-btn').forEach(b => {
+    b.addEventListener('click', () => setView(b.dataset.view));
+  });
+
   $('btnRecords').addEventListener('click', () => openRecords('docs'));
   $('btnRecordsM').addEventListener('click', () => openRecords('docs'));
+
+  const toggleTheme = () => applyTheme((document.documentElement.dataset.theme === 'dark') ? 'light' : 'dark');
+  $('btnTheme').addEventListener('click', toggleTheme);
+  $('btnThemeM').addEventListener('click', toggleTheme);
 
   $('zoomFit').addEventListener('click', () => setZoom(fitZoom($('pages'))));
   $('zoomIn').addEventListener('click', () => setZoom(Math.min(1.6, zoom + 0.15), true));
@@ -286,14 +326,43 @@ function bindEvents() {
 }
 
 function boot() {
+  applyTheme(document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light', true);
   state = loadDraft() || defaultState();
   document.body.dataset.view = 'edit';
+  document.body.dataset.mode = 'quote';
   bindEvents();
   syncFormFromState();
-  setZoom(fitZoom($('pages')));
   initCloud();
   wireRecordsModal();
   wireAutocomplete();
+  wirePM();
+  bindModeNav();
+  // last on purpose: depends on the jsPDF vendor lib — a slow/failed load must
+  // never take down the wiring above
+  try { setZoom(fitZoom($('pages'))); } catch (e) { /* preview recovers on next input */ }
+}
+
+/* ============================================================
+   Light / dark theme
+   ============================================================ */
+function applyTheme(theme, silent) {
+  document.documentElement.dataset.theme = theme;
+  try { localStorage.setItem('insq_theme', theme); } catch (e) { /* private mode */ }
+  const ico = theme === 'dark' ? '\u2600' : '\u263E';   // sun in dark mode (switch to light), moon otherwise
+  document.querySelectorAll('.theme-ico').forEach(el => { el.textContent = ico; });
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', theme === 'dark' ? '#0d1524' : '#00205a');
+  if (!silent && document.body.dataset.mode === 'pm') PM.drawChart();   // chart colors follow the theme
+}
+
+function setMode(mode) {
+  document.body.dataset.mode = mode;
+  document.querySelectorAll('.mn-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+  if (mode === 'pm') PM.render();
+  window.scrollTo({ top: 0 });
+}
+function bindModeNav() {
+  document.querySelectorAll('.mn-btn').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
 }
 
 /* ============================================================
@@ -385,6 +454,7 @@ function switchRecordsTab(tab) {
   document.querySelectorAll('.mtab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
   const body = document.getElementById('modalBody');
   if (tab === 'docs') renderDocsTab(body);
+  else if (tab === 'inv') renderInvTab(body);
   else if (tab === 'lib') renderLibTab(body);
   else renderSyncTab(body);
 }
@@ -413,6 +483,7 @@ function renderDocsTab(body) {
           <div class="doc-sub">${new Date(d.exportedAt).toLocaleDateString()} ${(d.kinds || []).join(', ')}</div>
         </div>
         <div class="doc-acts">
+          <button type="button" class="icon-btn inv" data-doc-inv="${esc(d.no)}" title="Generate an editable invoice from this quotation">&#129534;</button>
           <button type="button" class="icon-btn" data-doc-open="${esc(d.no)}" title="Open this quotation in the editor">&#128193;</button>
           <button type="button" class="icon-btn danger" data-doc-del="${esc(d.no)}" title="Delete record">&#10005;</button>
         </div>
@@ -420,6 +491,39 @@ function renderDocsTab(body) {
   };
   render();
   document.getElementById('docSearch').addEventListener('input', render);
+}
+
+function renderInvTab(body) {
+  body.innerHTML = `
+    <input id="invSearch" class="searchbox" type="search" placeholder="Search invoices by number, quotation ref, date, customer">
+    <div id="invList" class="docslist"></div>`;
+  const render = () => {
+    const list = Store.searchInvoices(document.getElementById('invSearch').value);
+    const box = document.getElementById('invList');
+    if (!list.length) {
+      box.innerHTML = '<div class="empty">' + (Store.loadInvoices().length
+        ? 'No invoices match your search.'
+        : 'No invoices yet \u2014 open the Documents tab and press the \u{1F9FE} button on a quotation to generate one. You can edit anything on it before saving.') + '</div>';
+      return;
+    }
+    box.innerHTML = list.map(d => `
+      <div class="doc-row">
+        <div class="doc-main">
+          <div class="doc-l1"><b>INV ${esc(d.invNo)}</b><span class="doc-date">${esc(fmtDateDisplay(d.date))}</span><span class="doc-ref">from Quotation ${esc(d.quoteNo || '\u2014')}</span></div>
+          <div class="doc-sub">${esc(d.customer || d.project || 'No customer set')}${d.project ? ' \u00b7 ' + esc(d.project) : ''}</div>
+        </div>
+        <div class="doc-right">
+          <b>LKR ${fmt2(d.total)}</b>
+          <div class="doc-sub">${new Date(d.exportedAt).toLocaleDateString()} ${(d.kinds || []).join(', ')}</div>
+        </div>
+        <div class="doc-acts">
+          <button type="button" class="icon-btn" data-inv-open="${esc(d.invNo)}" title="Open this invoice in the editor">&#128193;</button>
+          <button type="button" class="icon-btn danger" data-inv-del="${esc(d.invNo)}" title="Delete invoice record">&#10005;</button>
+        </div>
+      </div>`).join('');
+  };
+  render();
+  document.getElementById('invSearch').addEventListener('input', render);
 }
 
 function renderLibTab(body) {
@@ -499,6 +603,26 @@ function refreshEditorFromStore() {
   syncFormFromState();
   refreshPreview();
   saveDraft();
+  if (document.body.dataset.mode === 'pm') PM.render();
+}
+
+/* Create an editable invoice from a saved quotation (kept linked via quoteNo) */
+function newInvoiceFromQuotation(docRec) {
+  const s = JSON.parse(JSON.stringify(docRec.state));
+  s.docType = 'invoice';
+  s.quoteNo = String(docRec.no || '').trim();
+  s.invNo = Store.nextInvoiceNo();
+  const t = new Date();
+  s.date = t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0');
+  state = s;
+  setMode('quote');
+  document.body.dataset.view = 'edit';
+  document.querySelectorAll('.vs-btn').forEach(b => b.classList.toggle('active', b.dataset.view === 'edit'));
+  syncFormFromState();
+  refreshPreview();
+  saveDraft();
+  window.scrollTo({ top: 0 });
+  toast('Invoice ' + s.invNo + ' created from Quotation ' + s.quoteNo + ' \u2014 edit anything, then Save or Export');
 }
 
 function wireRecordsModal() {
@@ -515,11 +639,37 @@ function wireRecordsModal() {
       const doc = Store.loadDocs().find(d => d.no === t.dataset.docOpen);
       if (doc) {
         state = JSON.parse(JSON.stringify(doc.state));
+        if (!state.docType) state.docType = 'quotation';
+        setMode('quote');
         syncFormFromState();
         refreshPreview();
         saveDraft();
         closeRecords();
         toast('Quotation ' + doc.no + ' opened in the editor');
+      }
+    } else if (t.dataset.docInv !== undefined) {
+      const doc = Store.loadDocs().find(d => d.no === t.dataset.docInv);
+      if (doc) {
+        closeRecords();
+        newInvoiceFromQuotation(doc);
+      }
+    } else if (t.dataset.invOpen !== undefined) {
+      const iv = Store.loadInvoices().find(d => String(d.invNo) === t.dataset.invOpen);
+      if (iv) {
+        state = JSON.parse(JSON.stringify(iv.state));
+        state.docType = 'invoice';
+        setMode('quote');
+        syncFormFromState();
+        refreshPreview();
+        saveDraft();
+        closeRecords();
+        toast('Invoice ' + iv.invNo + ' opened in the editor');
+      }
+    } else if (t.dataset.invDel !== undefined) {
+      if (confirm('Delete the record of Invoice ' + t.dataset.invDel + '? (Exported files on disk are not affected.)')) {
+        Store.deleteInvoice(t.dataset.invDel);
+        renderInvTab(body);
+        toast('Invoice record deleted');
       }
     } else if (t.dataset.docDel !== undefined) {
       if (confirm('Delete the record of quotation ' + t.dataset.docDel + '? (Exported files on disk are not affected.)')) {
